@@ -1,1 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="theme-color" content="#08090f"/>
+<title>Vynrix — Lead Engine</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+/* ── DESIGN TOKENS ── */
+:root {
+  --bg:#08090f; --s1:#0e0f1a; --s2:#131421; --s3:#191a28; --s4:#1e2030;
+  --b1:rgba(255,255,255,.055); --b2:rgba(255,255,255,.1);
+  --lime:#b8ff57; --cyan:#38efca; --violet:#9b8dff; --amber:#ffb347; --rose:#ff6b8a;
+  --text:#eef0ff; --sub:#8890b0; --muted:#4a4f6a;
+  --head:'Syne',sans-serif; --mono:'IBM Plex Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);color:var(--text);font-family:var(--head);height:100%;overflow:hidden}
 
+.app{display:grid;grid-template-rows:52px 1fr;height:100vh}
+
+/* ── TOPBAR ── */
+.topbar{
+  background:rgba(8,9,15,.92);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--b1);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 20px;z-index:80;
+}
+.logo{font-size:17px;font-weight:800;letter-spacing:-.3px;display:flex;align-items:center;gap:8px}
+.logo-gem{width:24px;height:24px;border-radius:6px;background:linear-gradient(135deg,var(--lime),var(--cyan));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#000}
+.topbar-mid{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;color:var(--sub)}
+.pulse{width:6px;height:6px;border-radius:50%;background:var(--lime);box-shadow:0 0 6px var(--lime);animation:blink 1.8s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.topbar-right{display:flex;gap:8px;align-items:center}
+.tbtn{height:30px;padding:0 12px;border-radius:8px;border:1px solid var(--b1);background:var(--s2);color:var(--sub);font-family:var(--mono);font-size:11px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:5px}
+.tbtn:hover{border-color:var(--lime);color:var(--lime)}
+.api-status{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.api-status.ok{background:var(--lime);box-shadow:0 0 6px var(--lime)}
+.api-status.err{background:var(--rose)}
+
+/* ── PANELS ── */
+.panels{display:grid;grid-template-columns:320px 1fr;height:calc(100vh - 52px);overflow:hidden}
+@media(max-width:680px){.panels{grid-template-columns:1fr}}
+
+/* ── LEFT PANEL ── */
+.left{background:var(--s1);border-right:1px solid var(--b1);display:flex;flex-direction:column;overflow:hidden}
+
+.search-wrap{padding:12px 12px 8px;border-bottom:1px solid var(--b1)}
+.si{display:flex;align-items:center;gap:7px;background:var(--s2);border:1px solid var(--b1);border-radius:9px;padding:8px 11px;margin-bottom:8px;transition:border-color .2s}
+.si:focus-within{border-color:var(--lime)}
+.si input{flex:1;background:none;border:none;outline:none;color:var(--text);font-family:var(--mono);font-size:12px}
+.si input::placeholder{color:var(--muted)}
+.filters{display:flex;gap:5px;flex-wrap:wrap}
+.ftag{padding:3px 9px;border-radius:20px;font-size:10px;font-family:var(--mono);border:1px solid var(--b1);background:var(--s3);color:var(--sub);cursor:pointer;transition:all .2s}
+.ftag.on{background:rgba(184,255,87,.1);border-color:rgba(184,255,87,.3);color:var(--lime)}
+
+.scan-wrap{padding:10px 12px;border-bottom:1px solid var(--b1)}
+.scan-row{display:flex;gap:7px;margin-bottom:7px}
+.sinput{flex:1;background:var(--s2);border:1px solid var(--b1);border-radius:8px;padding:8px 10px;color:var(--text);font-family:var(--mono);font-size:11px;outline:none;transition:border-color .2s}
+.sinput:focus{border-color:var(--cyan)}
+.sinput option{background:var(--s2)}
+.sbtn{padding:8px 14px;border-radius:8px;border:none;background:var(--lime);color:#000;font-family:var(--head);font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;white-space:nowrap}
+.sbtn:hover{box-shadow:0 0 14px rgba(184,255,87,.35)}
+.sbtn:disabled{opacity:.5;cursor:not-allowed}
+.sbtn-ghost{background:var(--s3);color:var(--sub);border:1px solid var(--b1)}
+.sbtn-ghost:hover{color:var(--text);box-shadow:none}
+.sp{display:none;padding:3px 0}
+.sp.on{display:block}
+.sp-lbl{font-size:10px;color:var(--cyan);font-family:var(--mono);margin-bottom:4px}
+.sp-track{height:2px;background:var(--s4);border-radius:2px;overflow:hidden}
+.sp-fill{height:100%;background:linear-gradient(90deg,var(--lime),var(--cyan));border-radius:2px;width:0%;transition:width .35s}
+
+.llist{flex:1;overflow-y:auto;padding:8px}
+.llist::-webkit-scrollbar{width:3px}
+.llist::-webkit-scrollbar-thumb{background:var(--s4);border-radius:3px}
+
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:200px;color:var(--muted);font-family:var(--mono);font-size:11px;gap:6px;text-align:center}
+
+/* lead card */
+.lc{background:var(--s2);border:1px solid var(--b1);border-radius:11px;padding:11px;margin-bottom:7px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.lc:hover{border-color:rgba(184,255,87,.2);transform:translateX(2px)}
+.lc.sel{border-color:var(--lime);background:rgba(184,255,87,.04)}
+.lc.hot{border-color:rgba(255,107,138,.3);background:rgba(255,107,138,.03)}
+.lc.hot::before{content:'';position:absolute;left:0;top:0;width:3px;height:100%;background:var(--rose);border-radius:3px 0 0 3px}
+.lc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px}
+.lc-name{font-size:13px;font-weight:700;line-height:1.2}
+.badge{font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:2px 7px;border-radius:20px;flex-shrink:0}
+.b-hot{background:rgba(255,107,138,.15);color:var(--rose)}
+.b-new{background:rgba(184,255,87,.1);color:var(--lime)}
+.b-built{background:rgba(255,179,71,.1);color:var(--amber)}
+.b-done{background:rgba(56,239,202,.1);color:var(--cyan)}
+.b-sent{background:rgba(155,141,255,.1);color:var(--violet)}
+.lc-sub{font-size:10px;color:var(--sub);font-family:var(--mono);margin-bottom:6px}
+.lc-needs{display:flex;gap:3px;flex-wrap:wrap;margin-bottom:5px}
+.ntag{font-size:9px;padding:2px 6px;border-radius:4px;background:var(--s4);color:var(--muted);font-family:var(--mono)}
+.lc-score{display:flex;align-items:center;gap:6px}
+.sc-track{flex:1;height:2px;background:var(--s4);border-radius:2px;overflow:hidden}
+.sc-fill{height:100%;border-radius:2px;transition:width 1s ease}
+.sc-num{font-family:var(--mono);font-size:9px;color:var(--muted)}
+
+/* ── RIGHT PANEL ── */
+.right{display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
+
+.r-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--muted);font-family:var(--mono);font-size:12px;text-align:center;padding:40px}
+.r-empty h3{font-family:var(--head);font-size:17px;font-weight:700;color:var(--sub);margin-top:4px}
+
+/* detail */
+.detail{display:none;flex-direction:column;height:100%;overflow:hidden}
+.detail.on{display:flex}
+
+.dhead{padding:14px 18px;border-bottom:1px solid var(--b1);display:flex;align-items:flex-start;justify-content:space-between;flex-shrink:0;background:var(--s1);flex-wrap:wrap;gap:8px}
+.dh-name{font-size:17px;font-weight:800;margin-bottom:2px}
+.dh-meta{font-size:11px;color:var(--sub);font-family:var(--mono)}
+.dh-btns{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.abtn{padding:8px 14px;border-radius:9px;border:none;cursor:pointer;font-family:var(--head);font-size:12px;font-weight:600;transition:all .2s;display:flex;align-items:center;gap:5px}
+.ab-gen{background:var(--lime);color:#000}
+.ab-gen:hover{box-shadow:0 0 16px rgba(184,255,87,.35);transform:translateY(-1px)}
+.ab-gen:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
+.ab-ghost{background:var(--s3);color:var(--sub);border:1px solid var(--b1)}
+.ab-ghost:hover{color:var(--text)}
+.ab-hot{background:rgba(255,107,138,.1);color:var(--rose);border:1px solid rgba(255,107,138,.2)}
+
+.needs-bar{padding:12px 18px;border-bottom:1px solid var(--b1);background:var(--s1);flex-shrink:0}
+.nb-title{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.needs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:7px}
+.nc{background:var(--s2);border:1px solid var(--b1);border-radius:9px;padding:9px 11px}
+.nc.p{border-color:rgba(184,255,87,.2);background:rgba(184,255,87,.03)}
+.nc-ico{font-size:16px;margin-bottom:4px}
+.nc-title{font-size:11px;font-weight:700;margin-bottom:2px}
+.nc.p .nc-title{color:var(--lime)}
+.nc-desc{font-size:10px;color:var(--sub);font-family:var(--mono);line-height:1.4}
+
+/* proto area */
+.proto-area{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.ptoolbar{padding:9px 14px;border-bottom:1px solid var(--b1);display:flex;align-items:center;gap:9px;flex-shrink:0;background:var(--s1);flex-wrap:wrap}
+.pt-lbl{font-size:11px;color:var(--sub);font-family:var(--mono);flex:1}
+.devbtns{display:flex;gap:3px}
+.dbtn{width:27px;height:27px;border-radius:7px;background:var(--s2);border:1px solid var(--b1);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;transition:all .2s}
+.dbtn.on{background:var(--s3);border-color:var(--violet)}
+
+.loading{flex:1;display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:var(--bg)}
+.loading.on{display:flex}
+.spin{width:44px;height:44px;border-radius:50%;border:3px solid var(--s3);border-top-color:var(--lime);animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.gsteps{list-style:none;font-family:var(--mono);font-size:12px}
+.gsteps li{padding:4px 0;display:flex;align-items:center;gap:9px;color:var(--muted);transition:color .3s}
+.gsteps li::before{content:'○';font-size:10px}
+.gsteps li.done{color:var(--lime)}
+.gsteps li.done::before{content:'✓'}
+.gsteps li.run{color:var(--text)}
+.gsteps li.run::before{content:'▶';color:var(--lime)}
+
+.frame-wrap{flex:1;overflow:auto;background:#111;display:flex;align-items:flex-start;justify-content:center;padding:14px}
+.dshell{background:#1a1a1a;border-radius:12px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.07);width:100%;max-width:1100px;min-height:400px;transition:all .3s}
+.dshell.tablet{max-width:768px;border-radius:16px;border:5px solid #222}
+.dshell.mobile{max-width:375px;min-height:680px;border-radius:32px;border:8px solid #222;box-shadow:0 0 0 2px #333,0 30px 80px rgba(0,0,0,.7)}
+.pframe{width:100%;min-height:400px;border:none;display:block}
+.dshell.mobile .pframe{min-height:680px}
+.dshell.tablet .pframe{min-height:1024px}
+
+.pfooter{padding:9px 14px;border-top:1px solid var(--b1);display:none;align-items:center;gap:7px;background:var(--s1);flex-shrink:0;flex-wrap:wrap}
+.pfooter.on{display:flex}
+.purl{flex:1;background:var(--s2);border:1px solid var(--b1);border-radius:7px;padding:6px 10px;font-family:var(--mono);font-size:10px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.pfbtn{padding:6px 12px;border-radius:8px;border:none;cursor:pointer;font-family:var(--head);font-size:11px;font-weight:600;transition:all .2s;white-space:nowrap;display:flex;align-items:center;gap:4px}
+.pf-copy{background:var(--s3);color:var(--sub)}
+.pf-copy:hover{color:var(--text)}
+.pf-send{background:rgba(155,141,255,.12);color:var(--violet);border:1px solid rgba(155,141,255,.2)}
+.pf-accept{background:var(--cyan);color:#000}
+.pf-accept:hover{box-shadow:0 0 12px rgba(56,239,202,.35)}
+
+/* ── ALERT ── */
+#alert{position:fixed;top:62px;right:14px;z-index:999;width:min(330px,calc(100vw - 28px));transform:translateX(calc(100% + 20px));transition:transform .4s cubic-bezier(.175,.885,.32,1.275)}
+#alert.on{transform:translateX(0)}
+.al-inner{background:var(--s2);border:1px solid rgba(255,107,138,.3);border-radius:15px;padding:15px;box-shadow:0 14px 40px rgba(0,0,0,.5);position:relative;overflow:hidden}
+.al-inner::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at top right,rgba(255,107,138,.06),transparent 55%);pointer-events:none}
+.al-row{display:flex;align-items:center;gap:10px;margin-bottom:11px}
+.al-ico{width:36px;height:36px;border-radius:9px;background:rgba(255,107,138,.1);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;animation:pop .4s both}
+@keyframes pop{0%{transform:scale(0) rotate(-15deg);opacity:0}70%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
+.al-eye{font-size:9px;color:var(--rose);letter-spacing:1.5px;text-transform:uppercase;font-family:var(--mono)}
+.al-title{font-size:14px;font-weight:800;margin-top:1px}
+.al-body{background:rgba(0,0,0,.25);border-radius:9px;padding:9px;margin-bottom:11px}
+.al-biz{font-size:12px;font-weight:600;margin-bottom:2px}
+.al-det{font-size:10px;color:var(--sub);font-family:var(--mono)}
+.al-btns{display:flex;gap:5px}
+.abt{flex:1;padding:9px;border-radius:8px;border:none;cursor:pointer;font-family:var(--head);font-size:11px;font-weight:600;transition:all .2s}
+.abt-yes{background:var(--cyan);color:#000}
+.abt-view{background:rgba(155,141,255,.12);color:var(--violet)}
+.abt-no{background:var(--s4);color:var(--muted)}
+.al-x{position:absolute;top:10px;right:10px;width:20px;height:20px;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);font-size:11px;transition:all .2s}
+.al-x:hover{background:var(--s4);color:var(--text)}
+.al-prog{height:2px;background:var(--s4);border-radius:2px;margin-top:10px;overflow:hidden}
+.al-fill{height:100%;background:var(--rose);border-radius:2px;width:100%}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(14px);opacity:0;background:var(--s2);border:1px solid var(--b1);border-radius:9px;padding:8px 14px;font-size:12px;z-index:998;pointer-events:none;white-space:nowrap;transition:all .25s;font-family:var(--mono)}
+#toast.on{transform:translateX(-50%) translateY(0);opacity:1}
+#toast.ok{border-color:var(--lime);color:var(--lime)}
+#toast.inf{border-color:var(--violet);color:var(--violet)}
+#toast.hot{border-color:var(--rose);color:var(--rose)}
+#toast.err{border-color:var(--rose);color:var(--rose)}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.fu{animation:fadeUp .35s ease both}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo"><div class="logo-gem">V</div>Vynrix <span style="font-size:11px;color:var(--muted);font-weight:400;font-family:var(--mono)">/leads</span></div>
+  <div class="topbar-mid"><div class="pulse"></div><span id="eng-status">Connecting to API...</span></div>
+  <div class="topbar-right">
+    <div class="api-status" id="api-dot" title="API Status"></div>
+    <div class="tbtn" onclick="fireAlert()">🔔 <span id="nbadge">0</span></div>
+  </div>
+</div>
+
+<!-- ALERT -->
+<div id="alert">
+  <div class="al-inner">
+    <div class="al-x" onclick="closeAlert()">✕</div>
+    <div class="al-row">
+      <div class="al-ico">🔥</div>
+      <div><div class="al-eye">⚡ Hot Lead</div><div class="al-title" id="al-title">Business Interested!</div></div>
+    </div>
+    <div class="al-body">
+      <div class="al-biz" id="al-biz">—</div>
+      <div class="al-det" id="al-det">—</div>
+    </div>
+    <div class="al-btns">
+      <button class="abt abt-yes"  onclick="acceptAlert()">✓ Accept</button>
+      <button class="abt abt-view" onclick="viewAlert()">👁 Preview</button>
+      <button class="abt abt-no"   onclick="closeAlert()">Skip</button>
+    </div>
+    <div class="al-prog"><div class="al-fill" id="al-fill" style="transition:width 8s linear"></div></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- PANELS -->
+<div class="panels">
+
+  <!-- LEFT -->
+  <div class="left">
+    <div class="search-wrap">
+      <div class="si"><span style="color:var(--muted);font-size:12px">🔍</span><input type="text" placeholder="Search leads..." id="s-input" oninput="renderLeads()"/></div>
+      <div class="filters">
+        <div class="ftag on" onclick="setFilter('all',this)">All</div>
+        <div class="ftag"    onclick="setFilter('hot',this)">🔥 Hot</div>
+        <div class="ftag"    onclick="setFilter('new',this)">New</div>
+        <div class="ftag"    onclick="setFilter('built',this)">Built</div>
+        <div class="ftag"    onclick="setFilter('done',this)">Done</div>
+      </div>
+    </div>
+
+    <div class="scan-wrap">
+      <div class="scan-row">
+        <input class="sinput" id="sc-city" placeholder="City" value="Kozhikode"/>
+        <select class="sinput" id="sc-type" style="max-width:120px">
+          <option value="all">All Types</option>
+          <option value="restaurant">Restaurant</option>
+          <option value="clinic">Clinic</option>
+          <option value="boutique">Boutique</option>
+          <option value="homestay">Homestay</option>
+          <option value="coaching">Coaching</option>
+          <option value="salon">Salon</option>
+          <option value="realestate">Real Estate</option>
+        </select>
+      </div>
+      <div class="scan-row">
+        <button class="sbtn" id="sc-btn" onclick="scanLeads()" style="flex:1">⚡ Generate Leads</button>
+        <button class="sbtn sbtn-ghost" onclick="addDemo()">+ Demo</button>
+      </div>
+      <div class="sp" id="sc-prog">
+        <div class="sp-lbl" id="sc-lbl">Scanning...</div>
+        <div class="sp-track"><div class="sp-fill" id="sc-fill"></div></div>
+      </div>
+    </div>
+
+    <div class="llist" id="llist">
+      <div class="empty" id="l-empty"><div style="font-size:28px">📡</div><div>No leads yet</div><div>Click Generate Leads</div></div>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="right">
+    <div class="r-empty" id="r-empty">
+      <div style="font-size:38px">🎯</div>
+      <h3>Select a Lead</h3>
+      <div>Click any lead to analyse needs<br/>and generate a real website</div>
+      <div id="api-hint" style="margin-top:16px;background:var(--s1);border:1px solid var(--b1);border-radius:10px;padding:12px;font-size:11px;max-width:300px;line-height:1.6;display:none">
+        ⚙️ <strong style="color:var(--lime)">To enable live generation:</strong><br/>
+        Set <code style="color:var(--cyan)">BACKEND_URL</code> in config below<br/>
+        pointing to your Railway deployment
+      </div>
+    </div>
+
+    <div class="detail" id="detail">
+      <div class="dhead">
+        <div><div class="dh-name" id="dh-name">—</div><div class="dh-meta" id="dh-meta">—</div></div>
+        <div class="dh-btns">
+          <button class="abtn ab-ghost" onclick="closeDetail()">← Back</button>
+          <button class="abtn ab-hot"   onclick="markHot()">🔥 Hot</button>
+          <button class="abtn ab-gen"   id="gen-btn" onclick="buildSite()">⚡ Build Website</button>
+        </div>
+      </div>
+      <div class="needs-bar">
+        <div class="nb-title">🧠 AI Needs Analysis</div>
+        <div class="needs-grid" id="needs-grid"></div>
+      </div>
+      <div class="proto-area">
+        <div class="ptoolbar">
+          <div class="pt-lbl" id="pt-lbl">Click Build Website to generate</div>
+          <div class="devbtns">
+            <div class="dbtn on" id="d-d" onclick="setDev('desktop')" title="Desktop">🖥️</div>
+            <div class="dbtn"    id="d-t" onclick="setDev('tablet')"  title="Tablet">📱</div>
+            <div class="dbtn"    id="d-m" onclick="setDev('mobile')"  title="Mobile">📲</div>
+          </div>
+        </div>
+        <div class="loading" id="loading">
+          <div class="spin"></div>
+          <ul class="gsteps" id="gsteps">
+            <li id="s1">Analysing business needs</li>
+            <li id="s2">Planning website structure</li>
+            <li id="s3">Writing HTML</li>
+            <li id="s4">Styling with CSS</li>
+            <li id="s5">Adding interactions</li>
+            <li id="s6">Mobile optimisation</li>
+            <li id="s7">Final polish</li>
+          </ul>
+          <div style="font-family:var(--mono);font-size:11px;color:var(--muted)" id="g-msg">Claude is building the website...</div>
+        </div>
+        <div class="frame-wrap" id="frame-wrap" style="display:none">
+          <div class="dshell" id="dshell"><iframe id="pframe" class="pframe" sandbox="allow-scripts allow-same-origin allow-forms"></iframe></div>
+        </div>
+        <div class="pfooter" id="pfooter">
+          <div class="purl" id="purl">—</div>
+          <button class="pfbtn pf-copy"   onclick="copyHTML()">📋 Copy</button>
+          <button class="pfbtn pf-send"   onclick="sendClient()">📤 Send</button>
+          <button class="pfbtn pf-accept" onclick="acceptLead()">✅ Accept</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+// ════════════════════════════════════════════
+//  CONFIG  — change BACKEND_URL after deploying
+// ════════════════════════════════════════════
+const BACKEND_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:8000'
+  : '';   // ← After Railway deploy, paste URL here e.g. 'https://vynrix-api.up.railway.app'
+
+// ════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════
+let leads       = [];
+let active      = null;
+let curHTML     = '';
+let curDev      = 'desktop';
+let curFilter   = 'all';
+let alertTimer  = null;
+let alertLead   = null;
+let apiOk       = false;
+
+// ════════════════════════════════════════════
+//  API CHECK
+// ════════════════════════════════════════════
+async function checkAPI(){
+  if(!BACKEND_URL){ setApiStatus(false,'Backend URL not set — demo mode'); return; }
+  try {
+    const r = await fetch(BACKEND_URL+'/health', {signal: AbortSignal.timeout(4000)});
+    const d = await r.json();
+    apiOk = true;
+    setApiStatus(true, d.api_key_set ? 'API connected ✓' : 'Backend up — add API key');
+  } catch(e){
+    setApiStatus(false,'Backend offline — demo mode');
+  }
+}
+
+function setApiStatus(ok, msg){
+  const dot = document.getElementById('api-dot');
+  dot.className = 'api-status '+(ok?'ok':'err');
+  dot.title = msg;
+  document.getElementById('eng-status').textContent = msg;
+  if(!ok) document.getElementById('api-hint').style.display = 'block';
+}
+
+// ════════════════════════════════════════════
+//  BUSINESS DATA
+// ════════════════════════════════════════════
+const BIZ = {
+  restaurant:{emoji:'🍽️',label:'Restaurant',
+    names:['Malabar Biriyani House','Spice Garden','Kerala Kitchen','Arya Bhavan','Fish Fry Palace','Zaika Calicut'],
+    needs:[
+      {icon:'📋',title:'Online Menu',desc:'Customers check menu before visiting',p:true},
+      {icon:'📅',title:'Table Booking',desc:'Reduce phone calls with online reservations',p:true},
+      {icon:'📍',title:'Location & Hours',desc:'Most visitors just need to find them',p:true},
+      {icon:'📸',title:'Food Gallery',desc:'Photos of dishes increase footfall',p:false},
+      {icon:'⭐',title:'Reviews',desc:'Show Google ratings to build trust',p:false},
+      {icon:'🛵',title:'Home Delivery',desc:'Own ordering vs Zomato commission',p:false},
+    ]},
+  clinic:{emoji:'🏥',label:'Clinic',
+    names:['Dr. Priya Clinic','Life Care Centre','Family Health Hub','Wellness Point','NovaCare'],
+    needs:[
+      {icon:'📅',title:'Appointment Booking',desc:'Patients book without calling',p:true},
+      {icon:'👨‍⚕️',title:'Doctor Profile',desc:'Builds trust before the visit',p:true},
+      {icon:'⏰',title:'OPD Timings',desc:'Most searched info for any clinic',p:true},
+      {icon:'🏥',title:'Services List',desc:'What treatments are available',p:false},
+      {icon:'🆘',title:'Emergency Contact',desc:'Prominent emergency number',p:false},
+    ]},
+  boutique:{emoji:'👗',label:'Boutique',
+    names:['Lakshmi Boutique','Silk Thread','Fashion Nook','Meera Collections','The Drape House'],
+    needs:[
+      {icon:'🛍️',title:'Product Catalogue',desc:'Show collections like a lookbook',p:true},
+      {icon:'📱',title:'WhatsApp Order',desc:'Direct ordering — most used channel',p:true},
+      {icon:'📸',title:'Photo Gallery',desc:'High quality clothing photos sell better',p:true},
+      {icon:'🏷️',title:'Sale & Offers',desc:'Promote discounts to drive footfall',p:false},
+    ]},
+  homestay:{emoji:'🌴',label:'Homestay',
+    names:['Green Valley Stay','Coconut Grove','Spice Hills Villa','Mist Valley Home','Cardamom Retreat'],
+    needs:[
+      {icon:'📅',title:'Room Booking',desc:'Tourists book direct — no OTA fees',p:true},
+      {icon:'📸',title:'Photo Gallery',desc:'Photos are #1 conversion factor',p:true},
+      {icon:'💰',title:'Pricing & Packages',desc:'Clear pricing reduces hesitation',p:true},
+      {icon:'🌄',title:'Nearby Attractions',desc:'Guests plan trips around the stay',p:false},
+      {icon:'🚗',title:'How to Reach',desc:'Remote stays need clear directions',p:false},
+    ]},
+  coaching:{emoji:'🎓',label:'Coaching Centre',
+    names:['Sree Coaching','Brain Boost Academy','Excel Institute','Top Rank Academy','Scholars Hub'],
+    needs:[
+      {icon:'📚',title:'Courses & Batches',desc:'Parents check subjects covered',p:true},
+      {icon:'🏆',title:'Results & Ranks',desc:'Past results are biggest trust builder',p:true},
+      {icon:'📝',title:'Admission Form',desc:'Online registration saves office visits',p:true},
+      {icon:'💰',title:'Fee Structure',desc:'Transparent fees attract enquiries',p:false},
+    ]},
+  salon:{emoji:'✂️',label:'Salon',
+    names:['Glamour Studio','Style Works','Hair Magic','Glow Beauty','Aura Salon'],
+    needs:[
+      {icon:'📅',title:'Appointment Booking',desc:'Reduce walk-in waiting with slots',p:true},
+      {icon:'💇',title:'Services & Pricing',desc:'Clear service menu with prices',p:true},
+      {icon:'📸',title:'Before/After Gallery',desc:'Work portfolio builds confidence',p:true},
+      {icon:'🎁',title:'Packages & Offers',desc:'Bridal packages drive bookings',p:false},
+    ]},
+  realestate:{emoji:'🏠',label:'Real Estate',
+    names:['Dream Homes Kerala','Land Masters','Property Hub Kochi','Green Acres Realty','Nest Finders'],
+    needs:[
+      {icon:'🏘️',title:'Property Listings',desc:'Searchable properties with photos',p:true},
+      {icon:'📍',title:'Location Maps',desc:'Google Maps per property',p:true},
+      {icon:'📞',title:'Lead Capture Form',desc:'Collect buyer enquiries 24/7',p:true},
+      {icon:'💰',title:'EMI Calculator',desc:'Buyers check affordability',p:false},
+    ]},
+};
+
+function ri(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+function ro(arr){return arr[Math.floor(Math.random()*arr.length)]}
+function uid(){return 'L'+Date.now()+ri(100,999)}
+
+function makeLead(type, city){
+  const d = BIZ[type];
+  const needs = d.needs.slice().sort(()=>Math.random()-.5).slice(0,ri(3,5));
+  const score = ri(52,97);
+  return {
+    id:uid(), name:ro(d.names), type, emoji:d.emoji, label:d.label,
+    city, phone:`+91 ${ri(7000000000,9999999999)}`,
+    score, rating:(Math.random()*1.5+3.2).toFixed(1),
+    reviews:ri(8,340), status:score>88?'hot':'new',
+    needs, protoHTML:'', createdAt:new Date().toISOString()
+  };
+}
+
+// ════════════════════════════════════════════
+//  SCAN
+// ════════════════════════════════════════════
+async function scanLeads(){
+  const city  = document.getElementById('sc-city').value.trim()||'Kozhikode';
+  const type  = document.getElementById('sc-type').value;
+  const btn   = document.getElementById('sc-btn');
+  const prog  = document.getElementById('sc-prog');
+  const fill  = document.getElementById('sc-fill');
+  const lbl   = document.getElementById('sc-lbl');
+
+  btn.disabled = true; prog.classList.add('on');
+  document.getElementById('eng-status').textContent = `Scanning ${city}...`;
+
+  const types = type==='all' ? Object.keys(BIZ) : [type];
+  let newLeads=[], pct=0;
+
+  for(let i=0;i<types.length;i++){
+    lbl.textContent = `Finding ${BIZ[types[i]].label}s in ${city}...`;
+    await delay(500+ri(0,300));
+    const c = ri(2,4);
+    for(let j=0;j<c;j++) newLeads.push(makeLead(types[i],city));
+    pct = Math.round(((i+1)/types.length)*100);
+    fill.style.width = pct+'%';
+  }
+
+  const existing = new Set(leads.map(l=>l.name));
+  const added = newLeads.filter(l=>!existing.has(l.name));
+  leads = [...added,...leads];
+
+  await delay(250);
+  prog.classList.remove('on'); btn.disabled=false; fill.style.width='0%';
+  document.getElementById('eng-status').textContent = apiOk?'API connected ✓':'Demo mode';
+  renderLeads();
+  toast(`⚡ ${added.length} leads found in ${city}`,'ok');
+  updateBadge();
+
+  const hot = added.find(l=>l.score>88);
+  if(hot) setTimeout(()=>showAlert(hot),1400);
+}
+
+function addDemo(){
+  const data=[
+    {type:'restaurant',city:'Kozhikode'},{type:'clinic',city:'Thrissur'},
+    {type:'homestay',city:'Munnar'},{type:'boutique',city:'Kochi'},
+    {type:'coaching',city:'Trivandrum'},{type:'salon',city:'Kannur'},
+    {type:'realestate',city:'Kochi'},{type:'restaurant',city:'Palakkad'},
+  ];
+  const nl = data.map(d=>makeLead(d.type,d.city));
+  nl[0].status='hot'; nl[0].score=94;
+  nl[2].status='hot'; nl[2].score=91;
+  leads=[...nl,...leads];
+  renderLeads(); updateBadge();
+  toast('📋 Demo leads loaded','inf');
+  setTimeout(()=>showAlert(nl[0]),1000);
+}
+
+// ════════════════════════════════════════════
+//  RENDER LEADS
+// ════════════════════════════════════════════
+function renderLeads(){
+  const list  = document.getElementById('llist');
+  const empty = document.getElementById('l-empty');
+  const q     = document.getElementById('s-input').value.toLowerCase();
+
+  list.querySelectorAll('.lc').forEach(c=>c.remove());
+
+  const filtered = leads.filter(l=>{
+    const fm = curFilter==='all'?true:curFilter==='hot'?l.status==='hot':
+               curFilter==='new'?l.status==='new':curFilter==='built'?!!l.protoHTML:l.status==='done';
+    const sm = !q||l.name.toLowerCase().includes(q)||l.city.toLowerCase().includes(q)||l.label.toLowerCase().includes(q);
+    return fm&&sm;
+  });
+
+  if(!filtered.length){ empty.style.display='flex'; return; }
+  empty.style.display='none';
+
+  filtered.forEach((l,i)=>{
+    const sc = l.score>=85?'var(--rose)':l.score>=70?'var(--amber)':'var(--violet)';
+    const badge =
+      l.status==='hot'    ? '<span class="badge b-hot">🔥 Hot</span>':
+      l.protoHTML         ? '<span class="badge b-built">⚡ Built</span>':
+      l.status==='done'   ? '<span class="badge b-done">✅ Done</span>':
+      l.status==='sent'   ? '<span class="badge b-sent">📤 Sent</span>':
+                            '<span class="badge b-new">New</span>';
+    const ntags = l.needs.slice(0,3).map(n=>`<span class="ntag">${n.icon} ${n.title}</span>`).join('');
+    const c = document.createElement('div');
+    c.className=`lc ${l.status==='hot'?'hot':''} ${active?.id===l.id?'sel':''} fu`;
+    c.style.animationDelay=(i*.04)+'s';
+    c.dataset.id = l.id;
+    c.innerHTML=`
+      <div class="lc-top"><div class="lc-name">${l.emoji} ${l.name}</div>${badge}</div>
+      <div class="lc-sub">${l.city} · ${l.label} · ⭐${l.rating} (${l.reviews})</div>
+      <div class="lc-needs">${ntags}</div>
+      <div class="lc-score"><div class="sc-track"><div class="sc-fill" style="width:${l.score}%;background:${sc}"></div></div><div class="sc-num">${l.score}</div></div>`;
+    c.onclick=()=>selectLead(l.id);
+    list.appendChild(c);
+  });
+}
+
+function setFilter(f,el){
+  curFilter=f;
+  document.querySelectorAll('.ftag').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on'); renderLeads();
+}
+
+// ════════════════════════════════════════════
+//  SELECT LEAD
+// ════════════════════════════════════════════
+function selectLead(id){
+  active = leads.find(l=>l.id===id); if(!active) return;
+  document.querySelectorAll('.lc').forEach(c=>c.classList.toggle('sel',c.dataset.id===id));
+  document.getElementById('r-empty').style.display='none';
+  const det = document.getElementById('detail'); det.classList.add('on');
+  document.getElementById('dh-name').textContent=`${active.emoji} ${active.name}`;
+  document.getElementById('dh-meta').textContent=`${active.city} · ${active.label} · 📞 ${active.phone} · ⭐${active.rating} (${active.reviews} reviews)`;
+  renderNeeds();
+  if(active.protoHTML){ showProto(active.protoHTML); document.getElementById('pt-lbl').textContent='Prototype ready'; }
+  else {
+    document.getElementById('loading').classList.remove('on');
+    document.getElementById('frame-wrap').style.display='none';
+    document.getElementById('pfooter').classList.remove('on');
+    document.getElementById('pt-lbl').textContent='Click Build Website to generate';
+  }
+}
+
+function renderNeeds(){
+  const g = document.getElementById('needs-grid'); g.innerHTML='';
+  active.needs.forEach(n=>{
+    const c=document.createElement('div'); c.className=`nc ${n.p?'p':''}`;
+    c.innerHTML=`<div class="nc-ico">${n.icon}</div><div class="nc-title">${n.title}${n.p?' ⭐':''}</div><div class="nc-desc">${n.desc}</div>`;
+    g.appendChild(c);
+  });
+}
+
+function closeDetail(){
+  active=null;
+  document.getElementById('detail').classList.remove('on');
+  document.getElementById('r-empty').style.display='flex';
+  document.querySelectorAll('.lc').forEach(c=>c.classList.remove('sel'));
+}
+
+// ════════════════════════════════════════════
+//  BUILD WEBSITE
+// ════════════════════════════════════════════
+async function buildSite(){
+  if(!active) return;
+  const btn = document.getElementById('gen-btn');
+  btn.disabled=true; btn.innerHTML='⏳ Building...';
+  document.getElementById('frame-wrap').style.display='none';
+  document.getElementById('pfooter').classList.remove('on');
+  document.getElementById('loading').classList.add('on');
+  document.getElementById('eng-status').textContent=`Building for ${active.name}...`;
+
+  const sids=['s1','s2','s3','s4','s5','s6','s7'];
+  let si=0;
+  const iv=setInterval(()=>{
+    if(si>0) document.getElementById(sids[si-1]).className='done';
+    if(si<sids.length){ document.getElementById(sids[si]).className='run'; si++; }
+  }, apiOk?2000:800);
+
+  let html='';
+
+  if(apiOk && BACKEND_URL){
+    // ── REAL API CALL ──
+    try {
+      const res = await fetch(BACKEND_URL+'/api/generate',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          name:  active.name,
+          type:  active.label,
+          city:  active.city,
+          phone: active.phone,
+          needs: active.needs
+        })
+      });
+      if(!res.ok) throw new Error('API error '+res.status);
+      const d = await res.json();
+      html = d.html || '';
+    } catch(e){
+      toast('API error — using demo template','err');
+      await delay(4000);
+      html = buildTemplate(active);
+    }
+  } else {
+    // ── DEMO TEMPLATE ──
+    await delay(5500);
+    html = buildTemplate(active);
+  }
+
+  clearInterval(iv);
+  sids.forEach(s=>document.getElementById(s).className='done');
+  await delay(300);
+
+  active.protoHTML = html; curHTML = html;
+  document.getElementById('loading').classList.remove('on');
+  showProto(html);
+  btn.disabled=false; btn.innerHTML='🔄 Rebuild';
+  document.getElementById('eng-status').textContent = apiOk?'API connected ✓':'Demo mode';
+  toast(`✅ Website built for ${active.name}!`,'ok');
+  renderLeads();
+}
+
+function showProto(html){
+  document.getElementById('pframe').srcdoc=html;
+  document.getElementById('frame-wrap').style.display='flex';
+  document.getElementById('pfooter').classList.add('on');
+  document.getElementById('purl').textContent=`preview://${active.name.toLowerCase().replace(/\s+/g,'-')}.vynrix.in`;
+  setDev(curDev);
+}
+
+function setDev(m){
+  curDev=m;
+  ['d','t','m'].forEach((k,i)=>document.getElementById(k+'-'+['d','t','m'][i]).classList.toggle('on',['desktop','tablet','mobile'][i]===m));
+  const s=document.getElementById('dshell'),f=document.getElementById('pframe');
+  s.className='dshell'+(m!=='desktop'?' '+m:'');
+  f.style.minHeight=m==='mobile'?'680px':m==='tablet'?'1024px':'500px';
+}
+
+// Reset device btn IDs properly
+document.getElementById('d-d').onclick=()=>setDev('desktop');
+document.getElementById('d-t').onclick=()=>setDev('tablet');
+document.getElementById('d-m').onclick=()=>setDev('mobile');
+
+// ════════════════════════════════════════════
+//  DEMO TEMPLATE (needs-aware)
+// ════════════════════════════════════════════
+function buildTemplate(lead){
+  const T={
+    restaurant:{a:'#ff6b35',bg:'#0c0400',h:"'Playfair Display',serif",b:"'Lato',sans-serif",gf:'Playfair+Display:wght@700;800|Lato:wght@300;400;700',hero:'Authentic <em>Kerala Flavours</em>',sub:'Crafted with love, tradition and the finest local ingredients.'},
+    clinic:{a:'#0ea5e9',bg:'#00111a',h:"'Plus Jakarta Sans',sans-serif",b:"'Plus Jakarta Sans',sans-serif",gf:'Plus+Jakarta+Sans:wght@400;600;700;800',hero:'Your Health, <em>Our Priority</em>',sub:'Compassionate care and modern medicine right here in your community.'},
+    boutique:{a:'#c084fc',bg:'#0d0010',h:"'Cormorant Garamond',serif",b:"'Jost',sans-serif",gf:'Cormorant+Garamond:ital,wght@0,700;1,600|Jost:wght@300;400;500',hero:'Wear Your <em>True Self</em>',sub:'Curated collections celebrating every woman\'s elegance.'},
+    homestay:{a:'#34d399',bg:'#001a0d',h:"'Fraunces',serif",b:"'DM Sans',sans-serif",gf:'Fraunces:wght@700;800|DM+Sans:wght@300;400;500',hero:'Wake Up in <em>God\'s Own Country</em>',sub:'Immerse yourself in Kerala\'s breathtaking nature and warm hospitality.'},
+    coaching:{a:'#f59e0b',bg:'#0d0800',h:"'Syne',sans-serif",b:"'Inter',sans-serif",gf:'Syne:wght@600;700;800|Inter:wght@400;500',hero:'Your Success <em>Starts Here</em>',sub:'Expert coaching, proven results, and guidance to reach the top.'},
+    salon:{a:'#f472b6',bg:'#140009',h:"'Libre Baskerville',serif",b:"'Nunito',sans-serif",gf:'Libre+Baskerville:wght@700|Nunito:wght@300;400;600',hero:'Reveal Your <em>Best Self</em>',sub:'Premium beauty services crafted just for you.'},
+    realestate:{a:'#3b82f6',bg:'#000a1a',h:"'Urbanist',sans-serif",b:"'IBM Plex Sans',sans-serif",gf:'Urbanist:wght@600;700;800|IBM+Plex+Sans:wght@300;400;500',hero:'Find Your <em>Dream Home</em>',sub:'Kerala\'s trusted property partner — transparent deals, prime locations.'},
+  };
+  const t=T[lead.type]||T.restaurant;
+  const sections=lead.needs.map(n=>buildSection(n,lead,t)).join('');
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${lead.name}</title>
+<link href="https://fonts.googleapis.com/css2?family=${t.gf}&display=swap" rel="stylesheet">
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:${t.bg};color:#fff;font-family:${t.b};overflow-x:hidden}
+nav{position:fixed;top:0;left:0;right:0;z-index:99;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;background:rgba(0,0,0,.85);backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,.07)}
+.brand{font-family:${t.h};font-size:17px;font-weight:700;color:${t.a}}.nav-ph{font-size:12px;opacity:.6}
+.nav-ph a{color:inherit;text-decoration:none}
+.hero{min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;padding:100px 24px 60px;background:radial-gradient(ellipse at top,${t.a}18 0%,transparent 55%)}
+.hbadge{display:inline-block;padding:5px 16px;border-radius:20px;font-size:11px;font-weight:600;background:${t.a}22;color:${t.a};border:1px solid ${t.a}33;margin-bottom:20px;animation:fu .6s both}
+h1{font-family:${t.h};font-size:clamp(30px,7vw,60px);line-height:1.1;margin-bottom:18px;animation:fu .6s .1s both}
+h1 em{color:${t.a};font-style:italic}.hp{font-size:clamp(14px,2vw,17px);opacity:.6;max-width:500px;margin:0 auto 32px;line-height:1.7;animation:fu .6s .2s both}
+.cta{display:inline-block;padding:15px 38px;border-radius:13px;border:none;background:${t.a};color:#000;font-family:${t.h};font-size:15px;font-weight:700;cursor:pointer;animation:fu .6s .3s both;transition:all .2s}
+.cta:hover{transform:translateY(-3px);box-shadow:0 10px 30px ${t.a}44}
+.hstats{display:flex;gap:28px;justify-content:center;margin-top:44px;flex-wrap:wrap;animation:fu .6s .4s both}
+.hstat .v{font-family:${t.h};font-size:26px;font-weight:800;color:${t.a}}.hstat .l{font-size:11px;opacity:.45;margin-top:2px}
+section{padding:65px 24px;max-width:960px;margin:0 auto}
+.sh{text-align:center;margin-bottom:36px}.sh h2{font-family:${t.h};font-size:clamp(22px,4vw,36px);font-weight:700;margin-bottom:8px}
+.sh h2 em{color:${t.a};font-style:italic}.sh p{font-size:13px;opacity:.5;max-width:460px;margin:0 auto}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px}
+.card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:13px;padding:20px;transition:all .2s}
+.card:hover{border-color:${t.a}44;transform:translateY(-3px)}
+.card-ico{font-size:26px;margin-bottom:10px}.card h3{font-size:14px;font-weight:700;margin-bottom:5px}.card p{font-size:12px;opacity:.5;line-height:1.5}
+.form-box{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:28px;max-width:480px;margin:0 auto}
+.fl{margin-bottom:14px}.fl label{display:block;font-size:11px;opacity:.5;margin-bottom:5px;letter-spacing:.4px}
+.fl input,.fl select,.fl textarea{width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:9px;padding:10px 13px;color:#fff;font-family:inherit;font-size:13px;outline:none;transition:border-color .2s}
+.fl input:focus,.fl select:focus{border-color:${t.a}}.fl textarea{height:75px;resize:vertical}
+.fl select option{background:#111}
+.sub-btn{width:100%;padding:13px;border-radius:10px;border:none;background:${t.a};color:#000;font-size:14px;font-weight:700;cursor:pointer;font-family:${t.h};transition:all .2s;margin-top:4px}
+.sub-btn:hover{box-shadow:0 0 18px ${t.a}44}
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.gi{aspect-ratio:4/3;border-radius:11px;background:linear-gradient(135deg,${t.a}18,rgba(255,255,255,.04));border:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:5px;font-size:28px;cursor:pointer;transition:transform .2s}
+.gi:hover{transform:scale(1.03)}.gi span{font-size:10px;opacity:.4}
+.reviews{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.rv{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:13px;padding:18px}
+.rvs{color:${t.a};font-size:13px;margin-bottom:7px}.rvt{font-size:12px;opacity:.65;line-height:1.6;margin-bottom:10px;font-style:italic}.rvn{font-size:11px;font-weight:600}
+.locgrid{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+@media(max-width:580px){.locgrid{grid-template-columns:1fr}}
+.ilist{list-style:none}.ilist li{display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:13px}
+.ilist li:last-child{border:none}.ii{font-size:18px;flex-shrink:0}
+.map-ph{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:13px;height:180px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:7px;color:${t.a};font-size:12px;cursor:pointer}
+footer{padding:28px 24px;text-align:center;border-top:1px solid rgba(255,255,255,.05);font-size:11px;opacity:.3}
+@keyframes fu{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+</style></head><body>
+<nav><div class="brand">${lead.name}</div><div class="nav-ph">📞 <a href="tel:${lead.phone}">${lead.phone}</a></div></nav>
+<div class="hero"><div>
+  <div class="hbadge">📍 ${lead.city}, Kerala · ${lead.label}</div>
+  <h1>${t.hero}</h1><p class="hp">${t.sub}</p>
+  <button class="cta" onclick="alert('Thank you for your interest!\\n\\nVynrix will contact you within 24 hours to build your professional website.\\n\\nEstimated cost: ₹8,000 – ₹15,000\\nDelivery: 3–5 working days\\n\\n📞 We will call: ${lead.phone}')">✓ I Want This Website!</button>
+  <div class="hstats">
+    <div class="hstat"><div class="v">⭐ ${lead.rating}</div><div class="l">Google Rating</div></div>
+    <div class="hstat"><div class="v">${lead.reviews}+</div><div class="l">Happy Customers</div></div>
+    <div class="hstat"><div class="v">${lead.city}</div><div class="l">Location</div></div>
+  </div>
+</div></div>
+${sections}
+<footer>Crafted by <strong>Vynrix AI</strong> — vynrix.in · ${lead.name}, ${lead.city}</footer>
+<script>document.querySelectorAll('a[href^="#"]').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();document.querySelector(a.getAttribute('href'))?.scrollIntoView({behavior:'smooth'})}));<\/script>
+</body></html>`;
+}
+
+function buildSection(n,lead,t){
+  const a=t.a;
+  if(n.title.includes('Menu')||n.title.includes('Catalogue')||n.title.includes('Courses')||n.title.includes('Services & Pricing')){
+    const items={restaurant:[['Malabar Biriyani','₹220','Bestseller'],['Fish Curry Thali','₹180','Popular'],['Chicken Roast','₹260','Special'],['Prawn Masala','₹320','Seafood']],boutique:[['Designer Sarees','₹2,500+','New Arrivals'],['Salwar Kameez','₹1,200+','Popular'],['Bridal Collection','₹8,000+','Premium'],['Casual Wear','₹800+','Trending']],coaching:[['NEET Coaching','₹18,000/yr','Top Results'],['JEE Preparation','₹16,000/yr','Popular'],['Board Tuition','₹8,000/yr','All Subjects'],['Online Classes','₹5,000/yr','Flexible']],salon:[['Haircut & Styling','₹300+','Popular'],['Facial & Skin','₹800+','Premium'],['Bridal Package','₹5,000+','Special'],['Nail Art','₹400+','Trending']]};
+    const pool=items[lead.type]||items.restaurant;
+    const cards=pool.map(([nm,pr,tg])=>`<div class="card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px"><div><div style="font-size:10px;color:${a};margin-bottom:3px">${tg}</div><div style="font-size:14px;font-weight:700">${nm}</div></div><div style="font-size:17px;font-weight:800;color:${a}">${pr}</div></div>`).join('');
+    return `<section><div class="sh"><h2>${n.icon} Our <em>${n.title}</em></h2><p>Quality guaranteed</p></div><div class="grid">${cards}</div></section>`;
+  }
+  if(n.title.includes('Booking')||n.title.includes('Admission')||n.title.includes('Capture')){
+    return `<section id="book"><div class="sh"><h2>${n.icon} <em>${n.title}</em></h2><p>Quick & confirmed instantly</p></div>
+    <div class="form-box">
+      <div class="fl"><label>NAME</label><input type="text" placeholder="Your full name"/></div>
+      <div class="fl"><label>PHONE</label><input type="tel" placeholder="+91 XXXXX XXXXX"/></div>
+      <div class="fl"><label>DATE / TIME</label><input type="date"/></div>
+      <div class="fl"><label>MESSAGE</label><textarea placeholder="Any specific requirement?"></textarea></div>
+      <button class="sub-btn" onclick="alert('Booking confirmed! We will call you within 2 hours. Thank you! 📞')">Confirm ${n.title.split(' ').pop()}</button>
+    </div></section>`;
+  }
+  if(n.title.includes('Gallery')||n.title.includes('Photo')){
+    const icons={restaurant:'🍛',boutique:'👗',salon:'✂️',homestay:'🌴',realestate:'🏠',clinic:'🏥',coaching:'📚'};
+    const ico=icons[lead.type]||'📸';
+    const labels=['Main View','Interior','Our Work','Special','Premium','Latest'];
+    const items=labels.map(l=>`<div class="gi">${ico}<span>${l}</span></div>`).join('');
+    return `<section><div class="sh"><h2>${n.icon} Our <em>Gallery</em></h2><p>See the quality we deliver</p></div><div class="gallery">${items}</div></section>`;
+  }
+  if(n.title.includes('Location')||n.title.includes('Reach')||n.title.includes('Map')){
+    return `<section><div class="sh"><h2>${n.icon} Find <em>Us</em></h2></div>
+    <div class="locgrid">
+      <ul class="ilist">
+        <li><div class="ii">📍</div><div><strong>Address</strong><br/><span style="opacity:.55">${lead.name}, ${lead.city}, Kerala</span></div></li>
+        <li><div class="ii">📞</div><div><strong>Phone</strong><br/><a href="tel:${lead.phone}" style="color:${a}">${lead.phone}</a></div></li>
+        <li><div class="ii">🕐</div><div><strong>Hours</strong><br/><span style="opacity:.55">Mon–Sat: 9 AM – 8 PM · Sunday: 10 AM – 5 PM</span></div></li>
+        <li><div class="ii">⭐</div><div><strong>Rating</strong><br/><span style="color:${a}">${lead.rating}/5 · ${lead.reviews} reviews</span></div></li>
+      </ul>
+      <div class="map-ph" onclick="window.open('https://maps.google.com/?q=${encodeURIComponent(lead.name+' '+lead.city)}','_blank')">
+        <div style="font-size:30px">🗺️</div><div>Open in Google Maps</div><div style="opacity:.4;font-size:10px">${lead.city}, Kerala</div>
+      </div>
+    </div></section>`;
+  }
+  if(n.title.includes('Review')||n.title.includes('Results')){
+    const names=['Rahul M.','Priya K.','Anoop T.','Sneha R.'];
+    const texts=['Absolutely wonderful! Highly recommend.','Best in the city — quality exceeded expectations.','Regular customer for years. Never disappointed.','Professional, affordable, genuinely caring. 5 stars!'];
+    const cards=names.map((nm,i)=>`<div class="rv"><div class="rvs">★★★★★</div><div class="rvt">"${texts[i]}"</div><div class="rvn">${nm}</div></div>`).join('');
+    return `<section><div class="sh"><h2>${n.icon} What Customers <em>Say</em></h2></div><div class="reviews">${cards}</div></section>`;
+  }
+  if(n.title.includes('Doctor')||n.title.includes('Faculty')){
+    const cards=[1,2,3].map(i=>`<div class="card"><div class="card-ico">${lead.type==='clinic'?'👨‍⚕️':'👨‍🏫'}</div><h3>Expert ${i}</h3><p>Highly qualified with ${10+i*3}+ years of experience</p></div>`).join('');
+    return `<section><div class="sh"><h2>${n.icon} Meet Our <em>Team</em></h2><p>Qualified experts dedicated to you</p></div><div class="grid">${cards}</div></section>`;
+  }
+  return `<section><div class="sh"><h2>${n.icon} <em>${n.title}</em></h2><p>${n.desc}</p></div>
+  <div class="grid">
+    <div class="card"><div class="card-ico">✅</div><h3>Available</h3><p>This service is available — contact us for details.</p></div>
+    <div class="card"><div class="card-ico">📞</div><h3>Contact Us</h3><p>Reach us directly: ${lead.phone}</p></div>
+    <div class="card"><div class="card-ico">⭐</div><h3>Quality Assured</h3><p>We guarantee satisfaction with every service.</p></div>
+  </div></section>`;
+}
+
+// ════════════════════════════════════════════
+//  FOOTER ACTIONS
+// ════════════════════════════════════════════
+function copyHTML(){
+  if(!curHTML){toast('No prototype yet','inf');return;}
+  navigator.clipboard.writeText(curHTML).then(()=>toast('📋 HTML copied!','ok')).catch(()=>toast('Use Ctrl+U to view source','inf'));
+}
+function sendClient(){ if(active){active.status='sent';renderLeads();toast(`📤 Link sent to ${active.name}`,'inf');} }
+function acceptLead(){ if(active){active.status='done';renderLeads();toast(`✅ ${active.name} accepted! 📞`,'ok');} }
+function markHot(){ if(active){active.status='hot';active.score=Math.max(active.score,85);renderLeads();toast(`🔥 Marked hot!`,'hot');} }
+
+// ════════════════════════════════════════════
+//  ALERT
+// ════════════════════════════════════════════
+function showAlert(lead){
+  alertLead=lead;
+  document.getElementById('al-title').textContent='Business Interested!';
+  document.getElementById('al-biz').textContent=`${lead.emoji} ${lead.name}`;
+  document.getElementById('al-det').textContent=`${lead.city} · ${lead.label} · Score ${lead.score}`;
+  const popup=document.getElementById('alert'); popup.classList.add('on');
+  const f=document.getElementById('al-fill'); f.style.transition='none'; f.style.width='100%';
+  setTimeout(()=>{f.style.transition='width 8s linear';f.style.width='0%';},60);
+  clearTimeout(alertTimer); alertTimer=setTimeout(closeAlert,8000);
+  if(Notification.permission==='granted') new Notification('🔥 Vynrix — '+lead.name,{body:lead.city+' · '+lead.label});
+}
+function closeAlert(){document.getElementById('alert').classList.remove('on');clearTimeout(alertTimer);}
+function acceptAlert(){closeAlert();if(alertLead){alertLead.status='done';renderLeads();}toast('✅ Lead accepted! 📞','ok');}
+function viewAlert(){closeAlert();if(alertLead)selectLead(alertLead.id);}
+function fireAlert(){const h=leads.find(l=>l.status==='hot');if(h)showAlert(h);else toast('No hot leads yet','inf');}
+function updateBadge(){document.getElementById('nbadge').textContent=leads.filter(l=>l.status==='hot').length;}
+
+// ════════════════════════════════════════════
+//  UTILS
+// ════════════════════════════════════════════
+function delay(ms){return new Promise(r=>setTimeout(r,ms));}
+function toast(msg,type='ok'){
+  const t=document.getElementById('toast'); t.textContent=msg; t.className='on '+type;
+  clearTimeout(t._t); t._t=setTimeout(()=>t.className='',2800);
+}
+
+// ════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════
+checkAPI();
+setTimeout(()=>{
+  addDemo();
+  if('Notification' in window && Notification.permission==='default') Notification.requestPermission();
+},600);
+</script>
+</body>
+</html>
