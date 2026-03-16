@@ -2,6 +2,9 @@
 
 > Automatically finds businesses without websites → AI builds a prototype → alerts you when they're interested
 
+[![GitHub](https://img.shields.io/badge/GitHub-Vynrix%2FProject--3-181717?logo=github)](https://github.com/Vynrix/Project-3)
+[![Made by](https://img.shields.io/badge/Made%20by-Sreejith%20R-blueviolet)](https://github.com/Vynrix)
+
 ---
 
 ## 📁 Project Structure
@@ -27,8 +30,8 @@ vynrix-lead-engine/
 
 ### Step 1 — Clone the repo
 ```bash
-git clone https://github.com/YOUR_USERNAME/vynrix-lead-engine.git
-cd vynrix-lead-engine
+git clone https://github.com/Vynrix/Project-3.git
+cd Project-3
 ```
 
 ### Step 2 — Setup backend
@@ -65,14 +68,14 @@ The dashboard auto-detects if backend is running at `localhost:8000`.
 git init
 git add .
 git commit -m "Initial commit — Vynrix Lead Engine"
-git remote add origin https://github.com/YOUR_USERNAME/vynrix-lead-engine.git
+git remote add origin https://github.com/Vynrix/Project-3.git
 git push -u origin main
 ```
 
 ### Step 2 — Deploy on Railway
 1. Go to **railway.app** → Sign up free
 2. Click **New Project** → **Deploy from GitHub**
-3. Select your `vynrix-lead-engine` repo
+3. Select your `Project-3` repo
 4. Railway auto-detects Python and builds it
 
 ### Step 3 — Add your API key on Railway
@@ -149,8 +152,8 @@ Change it to:
 pkg update && pkg upgrade -y
 pkg install python git
 pip install fastapi uvicorn anthropic python-dotenv --prefer-binary
-git clone https://github.com/YOUR_USERNAME/vynrix-lead-engine.git
-cd vynrix-lead-engine/backend
+git clone https://github.com/Vynrix/Project-3.git
+cd Project-3/backend
 cp .env.example .env
 nano .env   # paste your API key
 python main.py
